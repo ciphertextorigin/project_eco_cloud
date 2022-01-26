@@ -1,0 +1,38 @@
+name: Publish on Docker Hub and Deploy
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [master ]
+  workflow_dispatch:
+
+jobs:
+
+  run_pub_tests:
+    runs-on: [ubuntu-latest]
+    steps:
+      - uses: actions/checkout@master
+      - uses: actions/setup-python@v1
+        with:
+          python-version: '3.8'
+          architecture: 'x64'
+      - name: Install requirements
+        run: pip install -r requirements.txt
+      - name: echo workspace
+        run: echo $GITHUB_WORKSPACE
+        shell: bash
+      - name: Run tests
+        run: coverage run src/app_test.py
+      - name: Tests report
+        run: coverage report
+  build:
+    needs: [run_pub_tests]
+    runs-on: [ubuntu-latest]
+    steps:
+    - uses: actions/checkout@master
+    - name: Build & Push Image
+      run:  |
+       echo "${{ secrets.DOCKER_TOKEN }}" | docker login -u "2021202121202120" --password-stdin
+       docker image build -t 2021202121202120/webserver:v1 . 
+       docker push 2021202121202120/webserver:v1
